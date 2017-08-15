@@ -7,6 +7,15 @@
 *.obj
 *.elf
 
+# Object dir
+obj/
+
+# Output binary dir
+bin/
+
+# Static library dir
+lib/
+
 # Linker output
 *.ilk
 *.map
