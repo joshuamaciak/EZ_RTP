@@ -21,9 +21,9 @@
 #define RTP_VERSION 2
 
 /**
- * A bit field used to represent the fixed-length RTP Header.
+ * A bit field used to represent the RTP packet header.
 **/
-struct rtp_header_fixed {
+struct rtp_header {
 	unsigned int version: 2;          // RTP version
 	unsigned int padding: 1;          // indicates whether the header contains padding
 	unsigned int extension: 1;        // indicates whether the header contains an extension
@@ -33,7 +33,7 @@ struct rtp_header_fixed {
 	unsigned int sequence_number: 16; // the number of the rtp packet sent in the sequence. increment by 1 for each packet
 	unsigned int timestamp: 32;	  // the timestamp of the packet
 	unsigned int ssrc: 32;		  // the synchronization source  
-	// list of CSRC's (32 bits) size csrc_count should be placed directly after this fixed header. 
+	uint32_t cscr[1];		  // optional list of contributing sources 
 };
 
 /**
