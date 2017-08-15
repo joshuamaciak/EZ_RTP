@@ -53,7 +53,6 @@ struct rtcp_header_fixed {
 	unsigned int rr_count: 5; 	// number of reception reports in this packet
 	unsigned int packet_type: 8;    // the type of rtcp packet
 	uint16_t length;		// the length of the packet in 32-bit words - 1
-	uint32_t ssrc: 32; 		// the synchronization source 
 };
 /**
  * RTCP sender report (SR) packet
