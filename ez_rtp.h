@@ -44,5 +44,21 @@ struct rtp_header_extension {
 	uint16_t length;		// 16 bits - number of words (4 bytes) in extension (excluding this header)
 	uint32_t* data; 		// the extension data
 };
+/**
+ * A bit field used to represent the fixed-length RTCP header
+**/
+struct rtcp_header_fixed {
+	unsigned int version: 2;	// RTP version
+	unsigned int padding: 1;	// indicates whether the packet contains padding
+	unsigned int rr_count: 5; 	// number of reception reports in this packet
+	unsigned int packet_type: 8;    // the type of rtcp packet
+	uint16_t length;		// the length of the packet in 32-bit words - 1
+	uint32_t ssrc: 32; 		// the synchronization source 
+};
+/**
+ * RTCP sender report (SR) packet
+**/
+struct rtcp_sender_report {
 
+};
 #endif
