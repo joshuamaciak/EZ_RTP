@@ -24,16 +24,16 @@
  * A bit field used to represent the RTP packet header.
 **/
 struct rtp_header {
-	unsigned int version: 2;          // RTP version
-	unsigned int padding: 1;          // indicates whether the header contains padding
-	unsigned int extension: 1;        // indicates whether the header contains an extension
-	unsigned int csrc_count: 4;       // the number of csrc id's that follow the fixed header
-	unsigned int marker: 1;           // determined by the RTP profile
-	unsigned int payload_type: 7;     // identifies the format of the payload 
-	unsigned int sequence_number: 16; // the number of the rtp packet sent in the sequence. increment by 1 for each packet
-	unsigned int timestamp: 32;	  // the timestamp of the packet
-	unsigned int ssrc: 32;		  // the synchronization source  
-	uint32_t cscr[1];		  // optional list of contributing sources 
+	unsigned int version: 2;        // RTP version
+	unsigned int padding: 1;        // indicates whether the header contains padding
+	unsigned int extension: 1;      // indicates whether the header contains an extension
+	unsigned int csrc_count: 4;     // the number of csrc id's that follow the fixed header
+	unsigned int marker: 1;         // determined by the RTP profile
+	unsigned int payload_type: 7;   // identifies the format of the payload 
+	uint16_t sequence_number; 	// the number of the rtp packet sent in the sequence. increment by 1 for each packet
+	uint32_t timestamp;	  	// the timestamp of the packet
+	uint32_t ssrc;		  	// the synchronization source  
+	uint32_t cscr[1];		// optional list of contributing sources 
 };
 
 /**
