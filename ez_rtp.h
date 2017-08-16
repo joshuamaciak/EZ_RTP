@@ -40,6 +40,15 @@
 #define SDES_ITEM_PRIV	8	// private extensions
 
 /**
+ * A structure that comprises an RPT profile.
+**/
+struct rtp_profile {
+	unsigned int uses_extention;	 // 0 if the profile does not make use of the header extension else 1
+	unsigned int payload_type;	 // the type of the payload
+	unsigned int extension_length;   // the size of the extension
+	unsigned int max_payload_length; // the maximum size a payload should be or 0 if there is no max size
+};
+/**
  * A bit field used to represent the RTP packet header.
 **/
 struct rtp_header {
@@ -54,7 +63,13 @@ struct rtp_header {
 	uint32_t ssrc;		  	// the synchronization source  
 	uint32_t cscr[1];		// optional list of contributing sources 
 };
-
+/**
+ * RTP packet
+**/
+struct rtp_packet {
+	struct rtp_header header;	// the RTP header
+	uint8_t payload[1];		// the payload
+};
 /**
  * Represents an RTP header extension
 **/
