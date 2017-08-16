@@ -55,9 +55,41 @@ struct rtcp_header_fixed {
 	uint16_t length;		// the length of the packet in 32-bit words - 1
 };
 /**
- * RTCP sender report (SR) packet
+ * Contains information about a sender for the SR
+**/
+struct rtcp_sender_info {
+        uint64_t ntp_timestamp;         // the wallclock time when this report was sent
+        uint64_t rtp_timestamp;         // time above, but in same units & random offset as the RTP packet timestamps
+        uint32_t sender_packet_count;   // the number of rtp packets sent thus far
+        uint32_t sender_octet_count;   // the number of octets sent in all payloads thus far
+};
+/**
+ * Holds info about data received from a given SSRC
+**/
+struct rtcp_reception_report {
+        uint32_t ssrc;                          // the ssrc of the source to which this report pertains
+        uint8_t  fraction_lost;                 // the fraction of rtp packets from this source lost since previous SR or RR was sent
+        unsigned int cum_num_packets_lost: 24;  // the number of rtp packets lost since beginning
+        uint32_t ext_highest_seq_num;           // the highest sequence number received (extended in some way??)
+        uint32_t interarrival_jitter;           // some formula for jitter
+        uint32_t last_sr_timestamp;             // middle 32 bits of most recent SR ntp_timestamp
+        uint32_t last_sr_delay;                 // the delay between receiving last SR packet from source SSRC & sending this (1/65536 sec)
+
+};
+/**
+ * RTCP sender report (SR)
 **/
 struct rtcp_sender_report {
-
+	uint32_t ssrc;						// the ssrc of the sender
+	struct rtcp_sender_info sender_info;			// sender info
+	struct rtcp_reception_report reception_report[1]; 	// optional list of reception reports
+	// todo implement a SR & RR profile extension
+};
+/**
+ * RTCP receiver report (RR)
+**/
+struct rtcp_receiver_report {
+	struct rtcp_reception_report reception_report[1]; 	// list of reception reports.
+	// todo implement a SR & RR profile extension
 };
 #endif
