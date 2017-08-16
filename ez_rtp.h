@@ -94,4 +94,36 @@ struct rtcp_receiver_report {
 	struct rtcp_reception_report reception_report[1]; 	// list of reception reports.
 	// todo implement a SR & RR profile extension
 };
-i#endif
+/**
+ * RTCP fixed-length SDES header
+**/
+struct rtcp_sdes_header_fixed {
+	unsigned int version: 2;		// RTP Version
+        unsigned int padding: 1;        	// indicates whether the packet contains padding
+	unsigned int source_count: 5;		// the number of (S/C)SRC chunks in this packet
+	uint8_t packet_type;			// the type of rtcp packet
+        uint16_t length;                	// the length of the packet in 32-bit words - 1
+};
+/**
+ * RTCP SDES item
+**/
+struct sdes_item {
+	uint8_t type;		// the type of the item
+	uint8_t length;		// the length of the text field (in octets)
+	char text[1];		// the text.
+};
+/**
+ * RTCP SDES chunk.
+**/
+struct rtcp_sdes_chunk {
+	uint32_t src; 			// either a CSRC or SSRC
+	struct sdes_item item[1];	// note: this list must be terminated by a null octet	 		
+};
+/**
+ * RTCP Source Description (SDES) 
+**/
+struct rtcp_source_description {
+	struct rtcp_sdes_header_fixed header;	// rtcp header
+	struct rtcp_sdes_chunk	chunks[1];	// sdes chunks
+};
+#endif
