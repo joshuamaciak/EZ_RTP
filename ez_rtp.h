@@ -43,7 +43,7 @@
  * A structure that comprises an RPT profile.
 **/
 struct rtp_profile {
-	unsigned int uses_extention;	 // 0 if the profile does not make use of the header extension else 1
+	unsigned int uses_extension;	 // 0 if the profile does not make use of the header extension else 1
 	unsigned int payload_type;	 // the type of the payload
 	unsigned int extension_length;   // the size of the extension
 	unsigned int max_payload_length; // the maximum size a payload should be or 0 if there is no max size
