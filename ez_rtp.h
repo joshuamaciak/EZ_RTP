@@ -61,7 +61,7 @@ struct rtp_header {
 	uint16_t sequence_number; 	// the number of the rtp packet sent in the sequence. increment by 1 for each packet
 	uint32_t timestamp;	  	// the timestamp of the packet
 	uint32_t ssrc;		  	// the synchronization source  
-	uint32_t cscr[1];		// optional list of contributing sources 
+	uint32_t csrc[1];		// optional list of contributing sources 
 };
 /**
  * RTP packet
@@ -164,7 +164,7 @@ struct rtcp_packet {
 	union {
 		struct rtcp_bye bye;
 		struct rtcp_source_description sdes;
-		struct rtcp_reception_report rr;
+		struct rtcp_receiver_report rr;
 		struct rtcp_sender_report sr;
 	} contents;
 };
