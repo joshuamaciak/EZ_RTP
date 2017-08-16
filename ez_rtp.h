@@ -18,7 +18,26 @@
 **/
 #include <stdint.h>
 
+/**
+ * Important constants within RTP & RTCP
+**/
 #define RTP_VERSION 2
+// packet types
+#define RTCP_PACKET_SENDER_REPORT 	200
+#define RTCP_PACKET_RECEIVER_REPORT 	201
+#define RTCP_PACKET_SOURCE_DESCRIPTION 	202
+#define RTCP_PACKET_BYE			203
+#define RTCP_PACKET_APP			204
+// SDES item types
+#define SDES_ITEM_END   0	// end of SDES item list
+#define SDES_ITEM_CNAME 1	// canonical name
+#define SDES_ITEM_NAME	2	// user name
+#define SDES_ITEM_EMAIL 3	// email
+#define SDES_ITEM_PHONE 4	// phone number
+#define SDES_ITEM_LOC 	5	// location
+#define SDES_ITEM_TOOL	6	// name of application
+#define SDES_ITEM_NOTE	7	// notice about source
+#define SDES_ITEM_PRIV	8	// private extensions
 
 /**
  * A bit field used to represent the RTP packet header.
