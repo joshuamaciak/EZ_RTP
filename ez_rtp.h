@@ -114,7 +114,6 @@ struct rtcp_reception_report {
  * RTCP sender report (SR)
 **/
 struct rtcp_sender_report {
-	struct rtcp_header_fixed header;			// rtcp header
 	uint32_t ssrc;						// the ssrc of the sender
 	struct rtcp_sender_info sender_info;			// sender info
 	struct rtcp_reception_report reception_report[1]; 	// optional list of reception reports
@@ -124,20 +123,9 @@ struct rtcp_sender_report {
  * RTCP receiver report (RR)
 **/
 struct rtcp_receiver_report {
-	struct rtcp_header_fixed header;			// rtcp header
+	uint32_t ssrc; 						// receiver generating this report
 	struct rtcp_reception_report reception_report[1]; 	// list of reception reports.
 	// todo implement a SR & RR profile extension
-};
-/**
- * RTCP fixed-length SDES header
-**/
-// todo need a different name for this header b/c not only sdes packet uses it (bye does)
-struct rtcp_sdes_header_fixed {
-	unsigned int version: 2;		// RTP Version
-        unsigned int padding: 1;        	// indicates whether the packet contains padding
-	unsigned int source_count: 5;		// the number of (S/C)SRC chunks in this packet
-	uint8_t packet_type;			// the type of rtcp packet
-        uint16_t length;                	// the length of the packet in 32-bit words - 1
 };
 /**
  * RTCP SDES item
@@ -158,16 +146,26 @@ struct rtcp_sdes_chunk {
  * RTCP Source Description (SDES) 
 **/
 struct rtcp_source_description {
-	struct rtcp_sdes_header_fixed header;	// rtcp header
 	struct rtcp_sdes_chunk	chunks[1];	// sdes chunks
 };
 /**
  * RTCP BYE 
 **/
 struct rtcp_bye {
-	struct rtcp_sdes_header_fixed header;   // rtcp header
 	uint32_t src;				// the (C/S)SRC
 	uint8_t length;				// the length of the reason for leaving (in octets)
 	char reason[1];				// the reason for leaving
+};
+/**
+ * RTCP packet
+**/
+struct rtcp_packet {
+	struct rtcp_header_fixed header;
+	union {
+		struct rtcp_bye bye;
+		struct rtcp_source_description sdes;
+		struct rtcp_reception_report rr;
+		struct rtcp_sender_report sr;
+	} contents;
 };
 #endif
