@@ -97,6 +97,7 @@ struct rtcp_receiver_report {
 /**
  * RTCP fixed-length SDES header
 **/
+// todo need a different name for this header b/c not only sdes packet uses it (bye does)
 struct rtcp_sdes_header_fixed {
 	unsigned int version: 2;		// RTP Version
         unsigned int padding: 1;        	// indicates whether the packet contains padding
@@ -125,5 +126,14 @@ struct rtcp_sdes_chunk {
 struct rtcp_source_description {
 	struct rtcp_sdes_header_fixed header;	// rtcp header
 	struct rtcp_sdes_chunk	chunks[1];	// sdes chunks
+};
+/**
+ * RTCP BYE 
+**/
+struct rtcp_bye {
+	struct rtcp_sdes_header_fixed header;   // rtcp header
+	uint32_t src;				// the (C/S)SRC
+	uint8_t length;				// the length of the reason for leaving (in octets)
+	char reason[1];				// the reason for leaving
 };
 #endif
