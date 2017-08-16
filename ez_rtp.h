@@ -80,6 +80,7 @@ struct rtcp_reception_report {
  * RTCP sender report (SR)
 **/
 struct rtcp_sender_report {
+	struct rtcp_header_fixed header;			// rtcp header
 	uint32_t ssrc;						// the ssrc of the sender
 	struct rtcp_sender_info sender_info;			// sender info
 	struct rtcp_reception_report reception_report[1]; 	// optional list of reception reports
@@ -89,7 +90,8 @@ struct rtcp_sender_report {
  * RTCP receiver report (RR)
 **/
 struct rtcp_receiver_report {
+	struct rtcp_header_fixed header;			// rtcp header
 	struct rtcp_reception_report reception_report[1]; 	// list of reception reports.
 	// todo implement a SR & RR profile extension
 };
-#endif
+i#endif
