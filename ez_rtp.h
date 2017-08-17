@@ -1,5 +1,5 @@
-#ifndef RTP_H
-#define RTP_H
+#ifndef EZ_RTP_H
+#define EZ_RTP_H
 /**
  *				Real-time Transport Protocol
  * Author: Joshua Maciak
@@ -205,5 +205,5 @@ struct rtcp_packet {
  * param: (struct rtp_session*) -> A pointer to an empty rtp_session.
  * return: (int)		-> 1 on success, 0 on failure 
 **/
-int rtp_init_session(struct rtp_session* session);
+int rtp_session_init(struct rtp_session* session);
 #endif
