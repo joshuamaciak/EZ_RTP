@@ -40,6 +40,34 @@
 #define SDES_ITEM_PRIV	8	// private extensions
 
 /**
+ * A structure representing a participant & info about them.
+**/
+struct participant_info {
+	uint32_t ssrc; 		  // the ssrc identifier
+	char* host;    		  // the host identifier (ip address as string)
+	int rtp_port;  		  // the port on which the participant accepts RTP packets
+	int rtcp_port;		  // the port on which the participant accepts RTCP packets
+	int num_received_packets; // number of packets received from participant
+	int num_packets_expected; // number of packets expected to be received (highest_seq - init_seq)
+	int num_packets_lost;     // number of packets that weren't received for any reason (expected - received)
+	int highest_seq;	  // the highest sequence number received so far
+	int init_seq;		  // the initial sequence number (should be random)
+	int cycles;		  // the number of times seq wraps around (since it is only 16 bits)
+	// todo: more statistics will be added as needed
+};
+/**
+ * A structure representing an RTP session.
+**/
+struct rtp_session {
+	uint32_t ssrc;				// your synchronization source identifier
+	int rtp_port;				// the port that will accept incoming RTP packets
+	int rtcp_port;  			// the port that will accept incoming RTCP packets
+	int num_participants; 			// the number of participants in the session
+	struct participant_info* participants;	// the individuals participating in the session
+
+};
+
+/**
  * A structure that comprises an RPT profile.
 **/
 struct rtp_profile {
