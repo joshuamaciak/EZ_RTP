@@ -62,6 +62,8 @@ struct rtp_session {
 	uint32_t ssrc;				// your synchronization source identifier
 	int rtp_port;				// the port that will accept incoming RTP packets
 	int rtcp_port;  			// the port that will accept incoming RTCP packets
+	int rtp_sock;				// the socket established to listen for rtp on a random port
+	int rtcp_sock; 				// the socket established to listen for rtcp on a random port
 	int num_participants; 			// the number of participants in the session
 	struct participant_info* participants;	// the individuals participating in the session
 
@@ -196,4 +198,12 @@ struct rtcp_packet {
 		struct rtcp_sender_report sr;
 	} contents;
 };
+
+// start function declarations
+/**
+ * Initializes an rtp session. On success rtp_session will be populated with necessary values.
+ * param: (struct rtp_session*) -> A pointer to an empty rtp_session.
+ * return: (int)		-> 1 on success, 0 on failure 
+**/
+int rtp_init_session(struct rtp_session* session);
 #endif
