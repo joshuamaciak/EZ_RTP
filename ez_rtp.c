@@ -1,6 +1,7 @@
 #include "ez_rtp.h"
 #include "ez_network.h"
 #include <sys/types.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -59,7 +60,7 @@ int urandom(uint32_t* r) {
 		printf("Critical error: couldn't open /dev/urandom.\n");
 		return 0;
 	}
-	read(urand_fd, &r, sizeof(uint32_t));
+	read(urand_fd, r, sizeof(uint32_t));
 	close(urand_fd);
 	return 1; 
 }
