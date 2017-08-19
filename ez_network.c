@@ -35,3 +35,27 @@ int ez_bind(int sock, int family, long address, int* port) {
 	*port = ntohs(addr_info.sin_port);
 	return 1;
 }
+/**
+ * Sends a packet to a host on the specified port.
+ * param: sock (int)	  -> a socket file descriptor
+ * param: data (void*)    -> a buffer containing the data to send
+ * param: length (size_t) -> the length of the data buffer
+ * param: addr_family (int) -> the address family AF_INET | AF_INET6
+ * param: host (char*)    -> the ipv4 address to send to in dot notation
+ * param: port (int)	  -> the port to send to
+ * return: (int)	  -> 1 on success, 0 on failure
+**/
+int ez_sendto(int sock, void* data, size_t length, int addr_family, char* host, int port) {
+	struct sockaddr_in dest_addr;
+	memset(&dest_addr, 0, sizeof(struct sockaddr_in));
+	dest_addr.sin_family = addr_family;
+	dest_addr.sin_port   = htons(port);
+	if(inet_pton(addr_family, host, &(dest_addr.sin_addr)) == 0) {
+		printf("Error: invalid IP address:%s\n", host);
+		return 0;
+	}
+	if(sendto(sock, data, length, 0, (struct sockaddr*) &dest_addr, sizeof(struct sockaddr_in)) != length) {
+		return 0;
+	}
+	return 1;
+}
