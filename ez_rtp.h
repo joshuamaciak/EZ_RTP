@@ -65,7 +65,7 @@ struct rtp_session {
 	int rtp_sock;				// the socket established to listen for rtp on a random port
 	int rtcp_sock; 				// the socket established to listen for rtcp on a random port
 	int num_participants; 			// the number of participants in the session
-	struct participant_info* participants;	// the individuals participating in the session
+	struct participant_info* participants;	// the individuals participating in the session	
 
 };
 
@@ -207,3 +207,4 @@ struct rtcp_packet {
 **/
 int rtp_session_init(struct rtp_session* session);
 #endif
+
