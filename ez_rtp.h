@@ -17,7 +17,7 @@
  *  
 **/
 #include <stdint.h>
-
+#include <sys/types.h>
 /**
  * Important constants within RTP & RTCP
 **/
@@ -39,6 +39,25 @@
 #define SDES_ITEM_NOTE	7	// notice about source
 #define SDES_ITEM_PRIV	8	// private extensions
 
+/** 
+ * Bitmask operations for getting/setting individual fields within
+ * RTP header bitfield.
+ * 
+ * These operations should be applied to a 16-bit unsigned integer
+ * (uint16_t) that represents the first 16 bits of a RTP Header 
+**/
+	#define GET_VERSION(bitfield) (bitfield >> 14) 
+	#define GET_PADDING(bitfield) (bitfield >> 13) & 0x1 // 001
+	#define GET_EXTENSION(bitfield) (bitfield >> 12) & 0x1
+	#define GET_CSRC_COUNT(bitfield) (bitfield >> 8) & 0xF // 1111
+	#define GET_MARKER(bitfield) (bitfield >> 7) & 0x1
+	#define GET_PAYLOAD_TYPE(bitfield) bitfield & 0x7 // 1111111
+	#define VERSION_MASK(version) version << 14
+	#define PADDING_MASK(padding) (padding & 0x1) << 13
+	#define EXTENSION_MASK(extension) (extension & 0x1) << 12
+	#define CSRC_COUNT_MASK(count) (count & 0xF) << 8
+	#define MARKER_MASK(marker) (marker & 0x1) << 7
+	#define PAYLOAD_TYPE_MASK(payload) (payload & 0x7)
 /**
  * A structure representing a participant & info about them.
 **/
@@ -206,5 +225,13 @@ struct rtcp_packet {
  * return: (int)		-> 1 on success, 0 on failure 
 **/
 int rtp_session_init(struct rtp_session* session);
+/**
+ * Sends an RTP packet to all of the participants.
+ * param: session (struct rtp_session*)      -> an active rtp_session
+ * param: packet  (struct rtp_packet*)       -> an rtp packet
+ * param: packet_length (struct rtp_packet*) -> the length of the packet (header + ext + payload + padding + anything else) in octets
+ * return: (int)                             -> 1 on success, 0 on failure
+**/
+int rtp_send(struct rtp_session* session, struct rtp_packet* packet, size_t packet_length);
 #endif
 
