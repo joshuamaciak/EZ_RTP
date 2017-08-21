@@ -120,7 +120,7 @@ struct rtp_packet {
 struct rtp_header_extension {
 	uint16_t profile_specific; 	// 16 bits to be defined by the profile for anything
 	uint16_t length;		// 16 bits - number of words (4 bytes) in extension (excluding this header)
-	uint32_t* data; 		// the extension data
+	uint32_t data[1]; 		// the extension data
 };
 /**
  * A bit field used to represent the fixed-length RTCP header
