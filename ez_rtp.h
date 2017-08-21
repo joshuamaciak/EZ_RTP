@@ -47,17 +47,17 @@
  * (uint16_t) that represents the first 16 bits of a RTP Header 
 **/
 	#define GET_VERSION(bitfield) (bitfield >> 14) 
-	#define GET_PADDING(bitfield) (bitfield >> 13) & 0x1 // 001
-	#define GET_EXTENSION(bitfield) (bitfield >> 12) & 0x1
-	#define GET_CSRC_COUNT(bitfield) (bitfield >> 8) & 0xF // 1111
-	#define GET_MARKER(bitfield) (bitfield >> 7) & 0x1
-	#define GET_PAYLOAD_TYPE(bitfield) bitfield & 0x7 // 1111111
-	#define VERSION_MASK(version) version << 14
-	#define PADDING_MASK(padding) (padding & 0x1) << 13
-	#define EXTENSION_MASK(extension) (extension & 0x1) << 12
-	#define CSRC_COUNT_MASK(count) (count & 0xF) << 8
-	#define MARKER_MASK(marker) (marker & 0x1) << 7
-	#define PAYLOAD_TYPE_MASK(payload) (payload & 0x7)
+	#define GET_PADDING(bitfield) ((bitfield >> 13) & 0x1) // 001
+	#define GET_EXTENSION(bitfield) ((bitfield >> 12) & 0x1)
+	#define GET_CSRC_COUNT(bitfield) ((bitfield >> 8) & 0xF) // 1111
+	#define GET_MARKER(bitfield) ((bitfield >> 7) & 0x1)
+	#define GET_PAYLOAD_TYPE(bitfield) (bitfield & 0x7F) // 1111111
+	#define VERSION_MASK(version) (version << 14)
+	#define PADDING_MASK(padding) ((padding & 0x1) << 13)
+	#define EXTENSION_MASK(extension) ((extension & 0x1) << 12)
+	#define CSRC_COUNT_MASK(count) ((count & 0xF) << 8)
+	#define MARKER_MASK(marker) ((marker & 0x1) << 7)
+	#define PAYLOAD_TYPE_MASK(payload) (payload & 0x7F)
 /**
  * A structure representing a participant & info about them.
 **/
@@ -101,12 +101,7 @@ struct rtp_profile {
  * A bit field used to represent the RTP packet header.
 **/
 struct rtp_header {
-	unsigned int version: 2;        // RTP version
-	unsigned int padding: 1;        // indicates whether the header contains padding
-	unsigned int extension: 1;      // indicates whether the header contains an extension
-	unsigned int csrc_count: 4;     // the number of csrc id's that follow the fixed header
-	unsigned int marker: 1;         // determined by the RTP profile
-	unsigned int payload_type: 7;   // identifies the format of the payload 
+	uint16_t bitfields;		// the first 16 bits of the rtp header
 	uint16_t sequence_number; 	// the number of the rtp packet sent in the sequence. increment by 1 for each packet
 	uint32_t timestamp;	  	// the timestamp of the packet
 	uint32_t ssrc;		  	// the synchronization source  
