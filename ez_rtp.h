@@ -85,7 +85,9 @@ struct rtp_session {
 	int rtcp_sock; 				// the socket established to listen for rtcp on a random port
 	int num_participants; 			// the number of participants in the session
 	struct participant_info* participants;	// the individuals participating in the session	
-
+	uint16_t init_seq; 				// the initial (random) sequence number for outgoing rtp packets
+	uint16_t last_seq; 				// the last sequence number sent out
+	uint32_t init_timestamp;			// the initial (random) value used for the relative timestamp of outgoing payload
 };
 
 /**
