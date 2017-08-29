@@ -35,6 +35,9 @@ int ez_bind(int sock, int family, long address, int* port) {
 	*port = ntohs(addr_info.sin_port);
 	return 1;
 }
+int ez_sendheader(int sock, struct rtp_header* header, size_t length, int addr_family, char* host, int port) {
+	return 0;
+}
 /**
  * Sends a packet to a host on the specified port.
  * param: sock (int)	  -> a socket file descriptor
@@ -57,5 +60,34 @@ int ez_sendto(int sock, void* data, size_t length, int addr_family, char* host, 
 	if(sendto(sock, data, length, 0, (struct sockaddr*) &dest_addr, sizeof(struct sockaddr_in)) != length) {
 		return 0;
 	}
+	return 1;
+}
+/**
+ * Attempts to read a datagram from a UDP socket. Note: this function does NOT block.
+ * param: sock (int)      -> a socket file descriptor
+ * param: buf (void**)    -> a pointer to a region of memory where the datagram will be stored. This memory is allocated within this function & must be freed when finished.
+ * param: length (size_t) -> on return this contains the size of the datagram
+ * return: 1 on success, 0 on failure
+**/
+int ez_recv_noblock(int sock, void** buf, size_t* length) {
+	*buf = malloc(*length);
+	// get length of datagram without removing it from queue
+	size_t dgram_size = recvfrom(sock, *buf, *length, MSG_TRUNC | MSG_DONTWAIT | MSG_PEEK, NULL, NULL);	
+	if(dgram_size == -1) {
+		// don't print errno if its just not blocking
+		if(errno != EAGAIN && errno != EWOULDBLOCK) {
+			printf("Error: Failed to receive nonblocking. Errno:%d", errno); 
+		}
+		return 0;
+	}
+	*buf = malloc(dgram_size);
+	if(*buf == NULL) {
+		printf("Error: Failed to allocate %zu bytes.\n", dgram_size);
+		return 0;
+	}
+	printf("dgram_size:%zu\n", dgram_size);
+	*length = dgram_size;
+	size_t bytes_recvd = recvfrom(sock, *buf, *length, MSG_DONTWAIT, NULL, NULL);
+	*length = bytes_recvd;
 	return 1;
 }
