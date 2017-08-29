@@ -63,6 +63,16 @@ int rtp_session_init(struct rtp_session* session) {
 	session->rtcp_port = rtcp_port;
 	return 1;	
 }
+/** 
+ * Blocks until an RTP packet is received.
+ * param: session (struct rtp_session*) -> an active rtp session
+ * param: packet (struct rtp_packet**)	-> the region that will store the received rtp_packet
+ * param: packet_length (size_t*) 	-> will contain the size of the received rtp_packet on return
+ * return: (int)			-> 0 on failure, 1 on success
+**/
+int rtp_recv(struct rtp_session* session, struct rtp_packet** packet, size_t* packet_length) {
+	
+}
 /**
  * Sends an RTP packet to all of the participants.
  * param: session (struct rtp_session*)      -> an active rtp_session
