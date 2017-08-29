@@ -22,6 +22,7 @@
  * Important constants within RTP & RTCP
 **/
 #define RTP_VERSION 2
+#define MAX_DATAGRAM_SIZE 508 // the number of octects that won't result in fragmentation of the datagram 576 (min MTU)  - 60 (max IP header) - 8 (UDP header) = 508
 // packet types
 #define RTCP_PACKET_SENDER_REPORT 	200
 #define RTCP_PACKET_RECEIVER_REPORT 	201
