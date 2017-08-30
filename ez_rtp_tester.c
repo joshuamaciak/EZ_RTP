@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <string.h>
-
+#include <errno.h>
 #define RTP_PAYLOAD_MPEG4 34
 
 int is_rtp_header_valid();
@@ -14,27 +14,11 @@ void print_rtp_packet(struct rtp_packet* rtp_packet, size_t packet_size_bytes);
 void print_rtp_session(struct rtp_session* session);
 int rtp_header_to_n(struct rtp_header* src, struct rtp_header* dest);
 void read_nal_bitstream_send(struct rtp_session* session, char* filename, int port);
-void fpeek(void* buf, int bytes, FILE* file);
+void fpeek(uint8_t* buf, int bytes, FILE* file);
+uint32_t sum_next_32_bits(FILE* file);
+uint32_t sum_next_24_bits(FILE* file);
+int send_rtp_packet_test(struct rtp_session* session, int port, uint8_t* nal_buf, size_t cur_nal_buf_size);
 int main(int argc, char** argv) {
-	/*struct rtp_profile profile;
-	profile.uses_extension 	 = 0;
-	profile.payload_type	 = RTP_PAYLOAD_MPEG4;
-	profile.max_payload_length = 0;
-	
-	struct rtp_packet my_first_packet;
-	my_first_packet.header.bitfields  = VERSION_MASK(2) | PADDING_MASK(0) | EXTENSION_MASK(0) | CSRC_COUNT_MASK(1) | MARKER_MASK(0) | PAYLOAD_TYPE_MASK(RTP_PAYLOAD_MPEG4);
-	my_first_packet.header.csrc[0]    = 69696969;
-	my_first_packet.header.ssrc       = 69696969;
-	my_first_packet.payload[0]	  = 69;
-	printf("bitfields:%" PRIu16 "\n", my_first_packet.header.bitfields);	
-	int res = 0;
-	res = is_rtp_header_valid(&my_first_packet, sizeof(struct rtp_packet), sizeof(struct rtp_header), &profile);
-	print_rtp_packet(&my_first_packet, sizeof(struct rtp_packet));
-	if(res == 1) {
-		printf("RTP header is valid!!\n");
-	} else {
-		printf("Error: invalid RTP header.\n");
-	}*/
 	struct rtp_session my_session;
 	if(rtp_session_init(&my_session) == 0) {
 		printf("Error: failed to initialize RTP session.\n");
@@ -43,11 +27,6 @@ int main(int argc, char** argv) {
 	printf("Successfully initiated RTP session.\n");
 	print_rtp_session(&my_session);
 	
-	/*struct rtp_header be_header;
-	rtp_header_to_n(&(my_first_packet.header), &be_header); 
-	if(ez_sendto(my_session.rtp_sock, (void*) &be_header, sizeof(struct rtp_header), AF_INET, "127.0.0.1", 55555) == 1) {
-		printf("Sent!\n");
-	}*/
 	if(argc == 2 && strcmp(argv[1], "r") == 0) {
 		printf("Waiting for rtp packets...\n");
 	while(1) {
@@ -79,7 +58,31 @@ int rtp_header_to_n(struct rtp_header* dest, struct rtp_header* const src) {
 	}
 	return 1;
 }
+int send_rtp_packet_test(struct rtp_session* session, int port, uint8_t* nal_buf, size_t cur_nal_buf_size) {
+	struct rtp_header header;
+	header.bitfields = VERSION_MASK(2) | PADDING_MASK(0) | EXTENSION_MASK(0) | CSRC_COUNT_MASK(1) | MARKER_MASK(0) | PAYLOAD_TYPE_MASK(RTP_PAYLOAD_MPEG4);
+	header.csrc[0] = 0x001111;
+	header.ssrc = 0x001010;
+
+	// todo: need to adjust based on csrc list size
+	size_t packet_size = sizeof(struct rtp_header) + cur_nal_buf_size;
+	printf("NAL unit length: %zu packet header: %zu total packet size: %zu\n", cur_nal_buf_size, sizeof(struct rtp_header), packet_size);                   // send data
+	struct rtp_packet* new_packet = malloc(packet_size);
+	memset(new_packet, 0, sizeof(uint8_t) * packet_size);
+	
+	memcpy(new_packet->payload, nal_buf, cur_nal_buf_size);
+	rtp_header_to_n(&(new_packet->header), &header);
+	
+	if(ez_sendto(session->rtp_sock, (void*) new_packet, packet_size, AF_INET, "127.0.0.1", port) == 1) {
+		printf("Sent!\n");
+	} else {
+		printf("Failed to send on port %d. Errno: %d", port, errno);
+	}	
+	free(new_packet);
+	return 1;
+}
 /**
+
  * reads a nal bitstream & sends it via rtp
 **/
 void read_nal_bitstream_send(struct rtp_session* session, char* filename, int port) {
@@ -91,46 +94,56 @@ void read_nal_bitstream_send(struct rtp_session* session, char* filename, int po
 		printf("Invalid file.\n");
 		return;
 	}
-	uint8_t start_code_prefix[] = {0x0, 0x0, 0x0, 0x1};
-	uint8_t stack[4];
-	uint8_t nal_buf[50000];
-	size_t max_nal_buf_size = 50000;
+	const size_t max_nal_buf_size = 50000;
+	uint8_t nal_buf[max_nal_buf_size];
 	size_t cur_nal_buf_size = 0;	
-	int start_nal = 1;
 	uint8_t cur_byte;
 	memset(nal_buf, 0, sizeof(uint8_t) * max_nal_buf_size);
-	
-	for(int i = 0; i < file_size; ++i) {
-		fread(&cur_byte, sizeof(uint8_t), 1, bitstream);
-		if(start_nal == 1) {
+	int num_bytes_read = 0;
+	int total_nal_bytes_sent = 0;
+	while(num_bytes_read < file_size) {
+		// if next 3 or 4 bytes is an end code
+		// send current nal buf (1 full nal unit
+		// else keep reading bytes into buf
+		
+		int do_send = 0;
+		if(sum_next_24_bits(bitstream) == 0x000001) {
+			num_bytes_read += 3;
+			fseek(bitstream, 3, SEEK_CUR);
+			do_send = 1;
+		} else if(sum_next_32_bits(bitstream) == 0x00000001) {
+			num_bytes_read += 4;
+                        fseek(bitstream, 4, SEEK_CUR);
+			do_send = 1;
+		}
+
+		if(do_send && cur_nal_buf_size > 0) {
+			send_rtp_packet_test(session, port, nal_buf, cur_nal_buf_size);
+			total_nal_bytes_sent += cur_nal_buf_size;
+			cur_nal_buf_size = 0;
+		} 
+		if( num_bytes_read < file_size) {
+			fread(&cur_byte, sizeof(uint8_t), 1, bitstream);
 			nal_buf[cur_nal_buf_size] = cur_byte;
 			cur_nal_buf_size++;
+			num_bytes_read++;
 		}
-		stack[0] = stack[1];
-		stack[1] = stack[2];
-		stack[2] = stack[3];
-		stack[3] = cur_byte;
-		if((stack[0] == 0x0 && stack[1] == 0x0 && stack[2] == 0x0 && stack[3] == 0x1) || (stack[1] == 0x0 && stack[2] == 0x0 && stack[3] == 0x1)) {
-			start_nal = 1;
-			if(cur_nal_buf_size == 0) continue;
-			struct rtp_header header;
-			header.bitfields = VERSION_MASK(2) | PADDING_MASK(0) | EXTENSION_MASK(0) | CSRC_COUNT_MASK(1) | MARKER_MASK(0) | PAYLOAD_TYPE_MASK(RTP_PAYLOAD_MPEG4);
-			header.csrc[0] = 0x001111;
-			header.ssrc = 0x001010;			
-			// todo: need to adjust based on csrc list size
-			size_t packet_size = sizeof(struct rtp_header) + cur_nal_buf_size;
-			printf("NAL unit length: %zu packet header: %zu total packet size: %zu\n", cur_nal_buf_size, sizeof(struct rtp_header), packet_size);			// send data
-			struct rtp_packet* new_packet = malloc(packet_size);
-			memset(new_packet, 0, sizeof(uint8_t) * packet_size);
-			memcpy(new_packet->payload, nal_buf, cur_nal_buf_size);
-			rtp_header_to_n(&(new_packet->header), &header); 
-        		if(ez_sendto(session->rtp_sock, (void*) new_packet, packet_size, AF_INET, "127.0.0.1", port) == 1) {
-                		printf("Sent!\n");
-        		}			 
-			cur_nal_buf_size = 0;
-		}
+			
 	}
-
+	// send final nal packet at EOF
+        send_rtp_packet_test(session, port, nal_buf, cur_nal_buf_size);
+	total_nal_bytes_sent += cur_nal_buf_size;
+	printf("Total size of all nal units sent: %d\n", total_nal_bytes_sent);  
+}
+uint32_t sum_next_24_bits(FILE* file) {
+	uint8_t buf[3];
+	fpeek(buf, 3, file);
+	return buf[0] + buf[1] + buf[2];
+}
+uint32_t sum_next_32_bits(FILE* file) {
+        uint8_t buf[4];
+        fpeek(buf, 4, file);
+        return buf[0] + buf[1] + buf[2] + buf[3];
 }
 void fpeek(uint8_t* buf, int bytes, FILE* file) {
 	fread(buf, sizeof(uint8_t), bytes, file);
