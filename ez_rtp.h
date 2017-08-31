@@ -245,5 +245,12 @@ int rtp_send(struct rtp_session* session, struct rtp_packet* packet, size_t pack
 **/
 size_t rtp_header_size(struct rtp_header* header);
 
+/**
+ * Calculates the size of the payload within an RTP packet
+ * param: (rtp_packet*) packet -> the rtp packet
+ * param: (size_t) packet_size -> the size of the total packet
+ * return: (size_t) the size of the payload.
+**/
+size_t rtp_payload_size(struct rtp_packet* packet, size_t packet_size);
 #endif
 

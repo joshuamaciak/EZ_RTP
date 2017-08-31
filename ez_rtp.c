@@ -109,6 +109,17 @@ size_t rtp_header_size(struct rtp_header* header) {
 	return size;	
 }
 /**
+ * Calculates the size of the payload within an RTP packet
+ * param: (rtp_packet*) packet -> the rtp packet
+ * param: (size_t) packet_size -> the size of the total packet
+ * return: (size_t) the size of the payload.
+**/
+size_t rtp_payload_size(struct rtp_packet* packet, size_t packet_size) {
+	size_t payload_size = packet_size - rtp_header_size(&(packet->header));
+	// todo: need to add support for packet padding
+	return payload_size;
+}
+/**
  * Gets a 4 octet random number from /dev/urandom (apparently it is the most * secure random source. 
  * param: (uint32_t*) -> A pointer that points to storage 
  * return: (int)      -> 1 on success, 0 on failure
