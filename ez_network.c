@@ -85,7 +85,6 @@ int ez_recv_noblock(int sock, void** buf, size_t* length) {
 		printf("Error: Failed to allocate %zu bytes.\n", dgram_size);
 		return 0;
 	}
-	printf("dgram_size:%zu\n", dgram_size);
 	*length = dgram_size;
 	size_t bytes_recvd = recvfrom(sock, *buf, *length, MSG_DONTWAIT, NULL, NULL);
 	*length = bytes_recvd;
