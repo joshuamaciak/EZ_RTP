@@ -93,6 +93,22 @@ int rtp_send(struct rtp_session* session, struct rtp_packet* packet, size_t pack
 	return (success == session->num_participants) ? 1 : 0;
 }
 /**
+ * Calculates the size of an RTP header. 
+ * param: (rtp_header*) header -> the rtp header
+ * return: (size_t) the size of the RTP header.
+ *
+ * (impl. note): we cannot simply assume a header is 16 octets b/c 
+ * variable length list of csrc's and possible header extension.
+ * Smallest possible rtp_header is 12 octets.
+**/
+size_t rtp_header_size(struct rtp_header* header) {
+	size_t size = sizeof(struct rtp_header);
+	int csrc_count = GET_CSRC_COUNT(header->bitfields);
+	size += (csrc_count - 1) * sizeof(uint32_t);
+	// todo: need to add support for header extensions
+	return size;	
+}
+/**
  * Gets a 4 octet random number from /dev/urandom (apparently it is the most * secure random source. 
  * param: (uint32_t*) -> A pointer that points to storage 
  * return: (int)      -> 1 on success, 0 on failure

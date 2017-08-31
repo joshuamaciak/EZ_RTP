@@ -217,12 +217,14 @@ struct rtcp_packet {
 };
 
 // start function declarations
+
 /**
  * Initializes an rtp session. On success rtp_session will be populated with necessary values.
  * param: (struct rtp_session*) -> A pointer to an empty rtp_session.
  * return: (int)		-> 1 on success, 0 on failure 
 **/
 int rtp_session_init(struct rtp_session* session);
+
 /**
  * Sends an RTP packet to all of the participants.
  * param: session (struct rtp_session*)      -> an active rtp_session
@@ -231,5 +233,17 @@ int rtp_session_init(struct rtp_session* session);
  * return: (int)                             -> 1 on success, 0 on failure
 **/
 int rtp_send(struct rtp_session* session, struct rtp_packet* packet, size_t packet_length);
+
+/**
+ * Calculates the size of an RTP header. 
+ * param: (rtp_header*) header -> the rtp header
+ * return: (size_t) the size of the RTP header.
+ *
+ * (impl. note): we cannot simply assume a header is 16 octets b/c 
+ * variable length list of csrc's and possible header extension.
+ * Smallest possible rtp_header is 12 octets.
+**/
+size_t rtp_header_size(struct rtp_header* header);
+
 #endif
 
