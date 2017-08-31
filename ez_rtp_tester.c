@@ -56,9 +56,10 @@ int main(int argc, char** argv) {
 		int last_seq_read = 0;
 		int expected = 0;
 		while(1) {
-	        	uint8_t* buf = NULL;
-			size_t length = 100000;
-			if(ez_recv_noblock(my_session.rtp_sock, &buf, &length) == 1) {
+			const size_t max_buf_len = 64000;
+			uint8_t buf[max_buf_len];
+			int length = 0;
+			if((length = ez_recv_noblock(my_session.rtp_sock, buf, max_buf_len)) != -1) {
 				printf("Received RTP packet. size:%zu\n", length);
 				struct rtp_packet* recvd_packet = buf;
 				print_buf(recvd_packet, length);
