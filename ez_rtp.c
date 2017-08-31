@@ -71,7 +71,7 @@ int rtp_session_init(struct rtp_session* session) {
  * return: (int)			-> 0 on failure, 1 on success
 **/
 int rtp_recv(struct rtp_session* session, struct rtp_packet** packet, size_t* packet_length) {
-	
+	return 0;	
 }
 /**
  * Sends an RTP packet to all of the participants.
