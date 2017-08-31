@@ -38,4 +38,12 @@ int ez_bind(int sock, int family, long address, int* port);
 **/
 int ez_sendto(int sock, void* data, size_t length, int addr_family, char* host, int port);
 
+/**
+ * Attempts to read a datagram from a UDP socket. Note: this function does NOT block.
+ * param: sock (int)      -> a socket file descriptor
+ * param: buf (void*)     -> a region of memory where the datagram will be stored
+ * param: length (size_t) -> the length of the supplied buffer
+ * return: number of bytes read on success, -1 on failure
+**/
+int ez_recv_noblock(int sock, void* buf, size_t length);
 #endif
