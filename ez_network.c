@@ -35,9 +35,7 @@ int ez_bind(int sock, int family, long address, int* port) {
 	*port = ntohs(addr_info.sin_port);
 	return 1;
 }
-int ez_sendheader(int sock, struct rtp_header* header, size_t length, int addr_family, char* host, int port) {
-	return 0;
-}
+
 /**
  * Sends a packet to a host on the specified port.
  * param: sock (int)	  -> a socket file descriptor
