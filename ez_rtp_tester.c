@@ -17,7 +17,25 @@ void read_nal_bitstream_send(struct rtp_session* session, char* filename, int po
 void fpeek(uint8_t* buf, int bytes, FILE* file);
 uint32_t sum_next_32_bits(FILE* file);
 uint32_t sum_next_24_bits(FILE* file);
-int send_rtp_packet_test(struct rtp_session* session, int port, uint8_t* nal_buf, size_t cur_nal_buf_size);
+int send_rtp_packet_test(struct rtp_session* session, int port, uint8_t* nal_buf, size_t cur_nal_buf_size, int seq_num);
+void print_buf(uint8_t* buf, size_t len);
+void log_payload_sent(int packet_num, uint8_t* buf, int length) {
+	FILE* log = fopen("sent.log", "a");
+	fwrite(&packet_num, sizeof(int), 1, log);
+	fwrite(buf, sizeof(uint8_t), length, log);
+	fclose(log);
+}
+void log_payload_recv(int packet_num, uint8_t* buf, int length) {
+        FILE* log = fopen("recv.log", "a");
+        fwrite(&packet_num, sizeof(int), 1, log);
+        fwrite(buf, sizeof(uint8_t), length, log);
+	fclose(log);
+}
+void print_buf(uint8_t* buf, size_t len) {
+	for(int i = 0; i < len; ++i) {
+		printf("%02X ",(unsigned)buf[i]);
+	}
+}
 int main(int argc, char** argv) {
 	struct rtp_session my_session;
 	if(rtp_session_init(&my_session) == 0) {
@@ -27,16 +45,46 @@ int main(int argc, char** argv) {
 	printf("Successfully initiated RTP session.\n");
 	print_rtp_session(&my_session);
 	
-	if(argc == 2 && strcmp(argv[1], "r") == 0) {
+	if(argc == 3 && strcmp(argv[1], "r") == 0) {
+		const uint8_t NAL_START_CODE[4] = {0x0, 0x0, 0x0, 0x1};
 		printf("Waiting for rtp packets...\n");
-	while(1) {
-			uint8_t* buf = NULL;
-			size_t length = 1000;
+		
+		FILE* out_file = fopen(argv[2], "wb");
+	
+		int total_nal_bytes_recvd = 0;
+		int total_bytes_recvd = 0;
+		int last_seq_read = 0;
+		int expected = 0;
+		while(1) {
+	        	uint8_t* buf = NULL;
+			size_t length = 100000;
 			if(ez_recv_noblock(my_session.rtp_sock, &buf, &length) == 1) {
-				printf("Received RTP packet. size:%zu", length);
+				printf("Received RTP packet. size:%zu\n", length);
+				struct rtp_packet* recvd_packet = buf;
+				print_buf(recvd_packet, length);
+				last_seq_read = ntohs(recvd_packet->header.sequence_number);
+				log_payload_recv(last_seq_read, recvd_packet->payload, length - 16);
+				if(expected != last_seq_read) {
+					printf("ERROR::: expected %d, read %d\n", expected, last_seq_read);
+				}
+				printf("Writing payload of rtp_packet seq_num=%" PRIu16 "\n", ntohs(recvd_packet->header.sequence_number));
+				fwrite(NAL_START_CODE, sizeof(uint8_t), 4, out_file);
+
+				
+				fwrite(recvd_packet->payload, sizeof(uint8_t), length - 16, out_file);
+				total_nal_bytes_recvd += length - 16;	
+				total_bytes_recvd += length;
+				// THIS IS HARDCODED & DANGEROUS REMOVE IT!!!
+				++expected;
 			}
 			free(buf);
-		}
+//			print_rtp_session(&my_session);
+	//		printf("Total nal bytes recvd: %d\n", total_nal_bytes_recvd);
+			if(last_seq_read == 8734) break;	
+	}
+		printf("Total nal bytes recvd: %d\n", total_nal_bytes_recvd);
+		printf("bytes recvd: %d\n", total_bytes_recvd);
+		fclose(out_file);
 		return 0;
 	} else if(argc == 3 && strcmp(argv[1], "s") == 0) {
 		
@@ -58,12 +106,12 @@ int rtp_header_to_n(struct rtp_header* dest, struct rtp_header* const src) {
 	}
 	return 1;
 }
-int send_rtp_packet_test(struct rtp_session* session, int port, uint8_t* nal_buf, size_t cur_nal_buf_size) {
+int send_rtp_packet_test(struct rtp_session* session, int port, uint8_t* nal_buf, size_t cur_nal_buf_size, int seq) {
 	struct rtp_header header;
 	header.bitfields = VERSION_MASK(2) | PADDING_MASK(0) | EXTENSION_MASK(0) | CSRC_COUNT_MASK(1) | MARKER_MASK(0) | PAYLOAD_TYPE_MASK(RTP_PAYLOAD_MPEG4);
 	header.csrc[0] = 0x001111;
 	header.ssrc = 0x001010;
-
+	header.sequence_number = seq;
 	// todo: need to adjust based on csrc list size
 	size_t packet_size = sizeof(struct rtp_header) + cur_nal_buf_size;
 	printf("NAL unit length: %zu packet header: %zu total packet size: %zu\n", cur_nal_buf_size, sizeof(struct rtp_header), packet_size);                   // send data
@@ -73,8 +121,10 @@ int send_rtp_packet_test(struct rtp_session* session, int port, uint8_t* nal_buf
 	memcpy(new_packet->payload, nal_buf, cur_nal_buf_size);
 	rtp_header_to_n(&(new_packet->header), &header);
 	
+	print_buf(new_packet, packet_size);
 	if(ez_sendto(session->rtp_sock, (void*) new_packet, packet_size, AF_INET, "127.0.0.1", port) == 1) {
-		printf("Sent!\n");
+		log_payload_sent(seq, nal_buf, cur_nal_buf_size);
+		printf("Sent packet! seq_num:%" PRIu16 "\n", seq);
 	} else {
 		printf("Failed to send on port %d. Errno: %d", port, errno);
 	}	
@@ -101,6 +151,7 @@ void read_nal_bitstream_send(struct rtp_session* session, char* filename, int po
 	memset(nal_buf, 0, sizeof(uint8_t) * max_nal_buf_size);
 	int num_bytes_read = 0;
 	int total_nal_bytes_sent = 0;
+	int num_packets_sent = 0;
 	while(num_bytes_read < file_size) {
 		// if next 3 or 4 bytes is an end code
 		// send current nal buf (1 full nal unit
@@ -118,8 +169,9 @@ void read_nal_bitstream_send(struct rtp_session* session, char* filename, int po
 		}
 
 		if(do_send && cur_nal_buf_size > 0) {
-			send_rtp_packet_test(session, port, nal_buf, cur_nal_buf_size);
+			send_rtp_packet_test(session, port, nal_buf, cur_nal_buf_size, num_packets_sent);
 			total_nal_bytes_sent += cur_nal_buf_size;
+			num_packets_sent++;
 			cur_nal_buf_size = 0;
 		} 
 		if( num_bytes_read < file_size) {
@@ -131,7 +183,7 @@ void read_nal_bitstream_send(struct rtp_session* session, char* filename, int po
 			
 	}
 	// send final nal packet at EOF
-        send_rtp_packet_test(session, port, nal_buf, cur_nal_buf_size);
+        send_rtp_packet_test(session, port, nal_buf, cur_nal_buf_size, num_packets_sent);
 	total_nal_bytes_sent += cur_nal_buf_size;
 	printf("Total size of all nal units sent: %d\n", total_nal_bytes_sent);  
 }
