@@ -76,7 +76,7 @@ int rtp_recv(struct rtp_session* session, struct rtp_packet** packet, size_t* pa
 	int res = 0;
 	*packet_length = MAX_DATAGRAM_SIZE;
 	*packet = malloc(MAX_DATAGRAM_SIZE);
-	res = ez_recv_noblock(session->rtp_sock, *packet, *packet_length);
+	res = ez_recv_noblock(session->rtp_sock,(void*) *packet, *packet_length);
 	if(res > 0) {
 		*packet_length = res;
 	} else {
@@ -85,8 +85,16 @@ int rtp_recv(struct rtp_session* session, struct rtp_packet** packet, size_t* pa
 	} 
 	
 	if(res == -1 && (errno != EAGAIN && errno != EWOULDBLOCK)) return 0;
-	
-	// todo: add participants if not in list
+	// convert rtp_header to host format
+	rtp_header_ntoh(&((*packet)->header), &((*packet)->header));
+	//  packet format sanity check
+	if(is_rtp_packet_valid(*packet, *packet_length) == 0) {
+		printf("[WARN]: RTP packet is malformed.\n"); 	
+	}
+	// add participants if not in list
+	if(find_participant(session, (*packet)->header.ssrc) == -1) {
+		add_participant(session, (*packet)->header.ssrc);
+	} 
 	return 1;	
 	
 }
@@ -160,6 +168,34 @@ int rtp_send(struct rtp_session* session, struct rtp_packet* packet, size_t pack
 	return (success == session->num_participants) ? 1 : 0;
 }
 /**
+ * Converts fields of rtp_header to network byte ordering (big endian)
+ * param: (rtp_header*) dest -> the big endian destination header
+ * param: (rtp_header* const) src -> the src header
+ * return: (int) -> 1 on success
+**/
+int rtp_header_hton(struct rtp_header* dest, struct rtp_header* const src) {
+        *dest = *src;
+        dest->bitfields       = htons(src->bitfields);
+        dest->sequence_number = htons(src->sequence_number);
+        dest->timestamp       = htonl(src->timestamp);
+        dest->ssrc            = htonl(src->ssrc);
+        for(int i = 0; i < GET_CSRC_COUNT(src->bitfields); ++i) {
+                dest->csrc[i] = htonl(src->csrc[i]);
+        }
+        return 1;
+}
+int rtp_header_ntoh(struct rtp_header* dest, struct rtp_header* const src) {
+	*dest = *src;
+	dest->bitfields       = ntohs(src->bitfields);
+	dest->sequence_number = ntohs(src->sequence_number);
+	dest->timestamp       = ntohl(src->timestamp);
+ 	dest->ssrc            = ntohl(src->ssrc);
+	for(int i = 0; i < GET_CSRC_COUNT(src->bitfields); ++i) {
+		dest->csrc[i] = ntohl(src->csrc[i]);
+	}	
+	return 1;
+}
+/**
  * Calculates the size of an RTP header. 
  * param: (rtp_header*) header -> the rtp header
  * return: (size_t) the size of the RTP header.
@@ -185,6 +221,18 @@ size_t rtp_payload_size(struct rtp_packet* packet, size_t packet_size) {
 	size_t payload_size = packet_size - rtp_header_size(&(packet->header));
 	// todo: need to add support for packet padding
 	return payload_size;
+}
+int is_rtp_packet_valid(struct rtp_packet* packet, size_t packet_length ) {
+	if(GET_VERSION(packet->header.bitfields) != RTP_VERSION) return 0;
+	if((GET_PAYLOAD_TYPE(packet->header.bitfields) == RTCP_PACKET_SENDER_REPORT) || (GET_PAYLOAD_TYPE(packet->header.bitfields) == RTCP_PACKET_RECEIVER_REPORT)) {
+		return 0;
+	}
+	if(GET_PADDING(packet->header.bitfields) == 1) {
+		uint8_t* p_last_octet = ((uint8_t*) packet) + (packet_length - 1);
+		if(*p_last_octet > (packet_length - rtp_header_size(&(packet->header)))) {
+			return 0;
+		}
+	}
 }
 /**
  * Gets a 4 octet random number from /dev/urandom (apparently it is the most * secure random source. 
