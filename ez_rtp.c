@@ -61,6 +61,8 @@ int rtp_session_init(struct rtp_session* session) {
                 return 0;
         }
 	session->rtcp_port = rtcp_port;
+	// initialize participant info list
+	session->participants = calloc(1, sizeof(struct participant_info));
 	return 1;	
 }
 /** 
@@ -71,7 +73,72 @@ int rtp_session_init(struct rtp_session* session) {
  * return: (int)			-> 0 on failure, 1 on success
 **/
 int rtp_recv(struct rtp_session* session, struct rtp_packet** packet, size_t* packet_length) {
-	return 0;	
+	int res = 0;
+	*packet_length = MAX_DATAGRAM_SIZE;
+	*packet = malloc(MAX_DATAGRAM_SIZE);
+	res = ez_recv_noblock(session->rtp_sock, *packet, *packet_length);
+	if(res > 0) {
+		*packet_length = res;
+	} else {
+		*packet_length = 0;
+	
+	} 
+	
+	if(res == -1 && (errno != EAGAIN && errno != EWOULDBLOCK)) return 0;
+	
+	// todo: add participants if not in list
+	return 1;	
+	
+}
+/**
+ * Adds a participant to the RTP session participant list
+ * param: (rtp_session*) session -> an active RTP session
+ * param: (uint32_t) ssrc	 -> the ssrc of the participant
+**/
+void add_participant(struct rtp_session* session, uint32_t ssrc) {
+	session->num_participants++;
+	session->participants = realloc(session->participants, sizeof(struct participant_info) * session->num_participants);
+	session->participants[session->num_participants - 1].ssrc = ssrc;
+}
+/**
+ * Removes a participant from the RTP session participant list
+ * param: (rtp_session*) session -> an active RTP session
+ * param: (uint32_t) ssrc	 -> the ssrc of the participant
+ * return: (int) 		 -> 1 if remove was successful, 0 if ssrc wasn't found
+**/
+int remove_participant(struct rtp_session* session, uint32_t ssrc) {
+	int index_for_removal = find_participant(session, ssrc);
+	// if found, shift all remaining elements down
+	if(index_for_removal == -1) {
+		return 0;
+	}
+	for(int i = index_for_removal + 1; i < session->num_participants; ++i) {
+		session->participants[i - 1] = session->participants[i]; 	
+	}
+	session->num_participants--;
+	return 1;
+}
+/**
+ * Finds a participant in the RTP session participant list via ssrc
+ * param: (rtp_session*) session -> an active RTP session
+ * param: (uint32_t) ssrc	 -> the ssrc of the participant
+ * return: (int) 		 -> the index of the participant if found, otherwise -1
+**/
+int find_participant(struct rtp_session* session, uint32_t ssrc) {
+	for(int i = 0; i < session->num_participants; ++i) {
+		if(session->participants[i].ssrc == ssrc) return i;
+	}
+	return -1;
+}
+/**
+ * Prints a list of all the current participants in an RTP session
+ * param: (rtp_session*) -> an active RTP sessioni
+**/
+void print_participants(struct rtp_session* session) {
+	printf("Printing %d participants:\n", session->num_participants);
+	for(int i = 0; i < session->num_participants; ++i) {
+		printf("Participant %u\n", session->participants[i].ssrc);
+	}
 }
 /**
  * Sends an RTP packet to all of the participants.

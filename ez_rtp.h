@@ -89,6 +89,8 @@ struct rtp_session {
 	uint16_t init_seq; 				// the initial (random) sequence number for outgoing rtp packets
 	uint16_t last_seq; 				// the last sequence number sent out
 	uint32_t init_timestamp;			// the initial (random) value used for the relative timestamp of outgoing payload
+	time_t t_last_rtcp_packet_sent; 		// the time the last rtcp packet was sent
+	int initial_rtcp;				// 1 if an rtcp packet has not yet been sent
 };
 
 /**
@@ -252,5 +254,34 @@ size_t rtp_header_size(struct rtp_header* header);
  * return: (size_t) the size of the payload.
 **/
 size_t rtp_payload_size(struct rtp_packet* packet, size_t packet_size);
+
+/**
+ * Finds a participant in the RTP session participant list via ssrc
+ * param: (rtp_session*) session -> an active RTP session
+ * param: (uint32_t) ssrc        -> the ssrc of the participant
+ * return: (int)                 -> the index of the participant if found, otherwise -1
+**/
+int find_participant(struct rtp_session* session, uint32_t ssrc);
+
+/**
+ * Adds a participant to the RTP session participant list
+ * param: (rtp_session*) session -> an active RTP session
+ * param: (uint32_t) ssrc        -> the ssrc of the participant
+**/
+void add_participant(struct rtp_session* session, uint32_t ssrc);
+
+/**
+ * Removes a participant from the RTP session participant list
+ * param: (rtp_session*) session -> an active RTP session
+ * param: (uint32_t) ssrc        -> the ssrc of the participant
+ * return: (int)                 -> 1 if remove was successful, 0 if ssrc wasn't found
+**/
+int remove_participant(struct rtp_session* session, uint32_t ssrc);
+
+/**
+ * Prints a list of all the current participants in an RTP session
+ * param: (rtp_session*) -> an active RTP session
+**/
+void print_participants(struct rtp_session* session);
 #endif
 

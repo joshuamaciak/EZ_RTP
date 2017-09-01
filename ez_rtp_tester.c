@@ -47,13 +47,21 @@ int main(int argc, char** argv) {
 	printf("Successfully initiated RTP session.\n");
 	print_rtp_session(&my_session);
 	
-	if(argc == 3 && strcmp(argv[1], "r") == 0) {
+	for(uint32_t i = 0; i < 10; ++i) {
+		add_participant(&my_session, i);
+	}
+	print_participants(&my_session);
+	for(uint32_t i = 0; i < 10; ++i) {
+		remove_participant(&my_session, i);
+	}
+	print_participants(&my_session);
+	/*if(argc == 3 && strcmp(argv[1], "r") == 0) {
 		recv_loop(&my_session, argv[2]);
 	} else if(argc == 3 && strcmp(argv[1], "s") == 0) {
 		
 		read_nal_bitstream_send(&my_session, "out.264", atoi(argv[2]));
 	}	
-	return 0;
+	return 0;*/
 }
 /**
  * Converts fields of rtp_header to network byte ordering
@@ -127,7 +135,7 @@ int send_rtp_packet_test(struct rtp_session* session, int port, uint8_t* nal_buf
 	print_buf((uint8_t*)new_packet, packet_size);
 	if(ez_sendto(session->rtp_sock, (void*) new_packet, packet_size, AF_INET, "127.0.0.1", port) == 1) {
 		log_payload_sent(seq, nal_buf, cur_nal_buf_size);
-		printf("Sent packet! seq_num:%" PRIu16 "\n", seq);
+		printf("Sent packet! seq_num:%d\n", seq);
 	} else {
 		printf("Failed to send on port %d. Errno: %d", port, errno);
 	}	
